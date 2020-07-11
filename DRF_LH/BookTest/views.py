@@ -2,6 +2,7 @@ from django.shortcuts import render
 from django.views import View
 from .models import BookInfo
 from django.http import JsonResponse
+from rest_framework.viewsets import ModelViewSet
 import json
 # Create your views here.
 
