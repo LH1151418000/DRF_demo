@@ -13,73 +13,147 @@ from .serializers import *
 from django.http import JsonResponse
 
 from rest_framework.generics import GenericAPIView
+from rest_framework.mixins import ListModelMixin, CreateModelMixin
+from rest_framework.mixins import RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin
+from rest_framework.generics import ListAPIView, CreateAPIView
+from rest_framework.generics import RetrieveAPIView, UpdateAPIView, DestroyAPIView
 
 
+# ########### GenericAPIView的五大子类 ##############
+
+"""
+    视图继承这五大子类后，只需要通过类属性
+    queryset指定操作的目标数据查询
+    serializer指定操作数据所使用的序列化器
+"""
+
+
+# 返回列表
+class BooksAPIView(ListAPIView, CreateAPIView):
+    queryset = BookInfo.objects.all()
+    serializer_class = BookInfoModelSerializer
+
+    # # 返回列表
+    # def get(self, request):
+    #     return self.list(request)
+    #
+    # # 新建单一
+    # def post(self, request):
+    #     return self.create(request)
+
+
+class BookAPIView(RetrieveAPIView, UpdateAPIView, DestroyAPIView):
+    queryset = BookInfo.objects.all()
+    serializer_class = BookInfoModelSerializer
+
+    # def get(self, request, pk):
+    #     return self.retrieve(request, pk)
+    #
+    # def put(self, request, pk):
+    #     return self.update(request, pk)
+    #
+    # def patch(self, request, pk):
+    #     return self.partial_update(request, pk)
+    #
+    # def delete(self, request, pk):
+    #     return self.destroy(request, pk)
+
+# ############# 使用Mixin拓展类实现CURD ##############
+
+# 返回列表
+# class BooksAPIView(ListModelMixin, CreateModelMixin, GenericAPIView):
+#     queryset = BookInfo.objects.all()
+#     serializer_class = BookInfoModelSerializer
+#
+#     # 返回列表
+#     def get(self, request):
+#         return self.list(request)
+#
+#     # 新建单一
+#     def post(self, request):
+#         return self.create(request)
+#
+#
+# class BookAPIView(RetrieveModelMixin, UpdateModelMixin, DestroyModelMixin, GenericAPIView):
+#     queryset = BookInfo.objects.all()
+#     serializer_class = BookInfoModelSerializer
+#
+#     def get(self, request, pk):
+#         return self.retrieve(request, pk)
+#
+#     def put(self, request, pk):
+#         return self.update(request, pk)
+#
+#     def patch(self, request, pk):
+#         return self.partial_update(request, pk)
+#
+#     def delete(self, request, pk):
+#         return self.destroy(request, pk)
 # ################# DRF视图 使用GenericAIPView #####################
-class BooksAPIView(GenericAPIView):
-    # 获取目标数据
-    queryset = BookInfo.objects.all()
-    # 获取指定序列化器
-    serializer_class = BookInfoModelSerializer
-
-    # 返回列表
-    # GET + /books/
-    def get(self, request):
-        books = self.get_queryset()
-        bs = self.get_serializer(books, many=True)
-
-        return Response(bs.data)
-
-    # 新建单一
-    def post(self, request):
-        bs = self.get_serializer(data=request.data)
-        if not bs.is_valid():
-            return Response(bs.errors, status=HTTP_400_BAD_REQUEST)
-        bs.save()
-        return Response(bs.data, status=HTTP_201_CREATED)
-
-
-class BookAPIView(GenericAPIView):
-
-    queryset = BookInfo.objects.all()
-    serializer_class = BookInfoModelSerializer
-
-    lookup_field = "pk"  # 设置默认是pk
-    # 用来指定提取过滤字段值的路径分组名称
-    lookup_url_kwarg = lookup_field
-
-    # 返回单一
-    # GET /books/<pk>/
-    def get(self, request, pk):
-
-        # 获取单一对象, 这查询集中根据pk过滤出唯一对象
-        book = self.get_object()
-        bs = self.serializer_class(book)
-        return Response(bs.data, status=HTTP_200_OK)
-
-    # 删除单一
-    # DELETE + /books/<pk>/
-    def delete(self, request, pk):
-        book = self.get_object()
-        book.delete()
-        return Response(data=None, status=HTTP_204_NO_CONTENT)
-
-    # 全更新
-    # PUT + /books/<pk>/
-    def put(self, request, pk, **kwargs):
-        partial = kwargs.get("partial", False)
-
-        book = self.get_object()
-        bs = self.get_serializer(book, data=request.data, partial=partial)
-        if not bs.is_valid():
-            return Response(data=bs.errors, status=HTTP_400_BAD_REQUEST)
-        bs.save()
-        return Response(bs.data, status=HTTP_201_CREATED)
-
-    # 部分更新
-    # PATCH + /books/<pk>/
-    def patch(self, request, pk):
-        return self.put(request, pk, partial=True)
+# class BooksAPIView(GenericAPIView):
+#     # 获取目标数据
+#     queryset = BookInfo.objects.all()
+#     # 获取指定序列化器
+#     serializer_class = BookInfoModelSerializer
+#
+#     # 返回列表
+#     # GET + /books/
+#     def get(self, request):
+#         books = self.get_queryset()
+#         bs = self.get_serializer(books, many=True)
+#
+#         return Response(bs.data)
+#
+#     # 新建单一
+#     def post(self, request):
+#         bs = self.get_serializer(data=request.data)
+#         if not bs.is_valid():
+#             return Response(bs.errors, status=HTTP_400_BAD_REQUEST)
+#         bs.save()
+#         return Response(bs.data, status=HTTP_201_CREATED)
+#
+#
+# class BookAPIView(GenericAPIView):
+#
+#     queryset = BookInfo.objects.all()
+#     serializer_class = BookInfoModelSerializer
+#
+#     lookup_field = "pk"  # 设置默认是pk
+#     # 用来指定提取过滤字段值的路径分组名称
+#     lookup_url_kwarg = lookup_field
+#
+#     # 返回单一
+#     # GET /books/<pk>/
+#     def get(self, request, pk):
+#
+#         # 获取单一对象, 这查询集中根据pk过滤出唯一对象
+#         book = self.get_object()
+#         bs = self.serializer_class(book)
+#         return Response(bs.data, status=HTTP_200_OK)
+#
+#     # 删除单一
+#     # DELETE + /books/<pk>/
+#     def delete(self, request, pk):
+#         book = self.get_object()
+#         book.delete()
+#         return Response(data=None, status=HTTP_204_NO_CONTENT)
+#
+#     # 全更新
+#     # PUT + /books/<pk>/
+#     def put(self, request, pk, **kwargs):
+#         partial = kwargs.get("partial", False)
+#
+#         book = self.get_object()
+#         bs = self.get_serializer(book, data=request.data, partial=partial)
+#         if not bs.is_valid():
+#             return Response(data=bs.errors, status=HTTP_400_BAD_REQUEST)
+#         bs.save()
+#         return Response(bs.data, status=HTTP_201_CREATED)
+#
+#     # 部分更新
+#     # PATCH + /books/<pk>/
+#     def patch(self, request, pk):
+#         return self.put(request, pk, partial=True)
 # ################ 继承APIView使用CURD #############################
 # class BooksAPIView(APIView):
 #
