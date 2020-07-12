@@ -1,92 +1,43 @@
+"""
+DRF模型类序列化器
+    自动从模型类中把字段映射到序列化器中，自动设置约束条件
+    重写create和update方法
+"""
+
 from rest_framework import serializers
 from .models import *
 
 
-class HeroInfoSerializer2(serializers.Serializer):
-    """英雄数据序列化器"""
-    GENDER_CHOICES = (
-        (0, 'male'),
-        (1, 'female')
-    )
-    id = serializers.IntegerField(label='ID', read_only=True)
-    hname = serializers.CharField(label='名字', max_length=20)
-    hgender = serializers.ChoiceField(choices=GENDER_CHOICES, label='性别', required=False)
+class BookInfoModelSerializer(serializers.ModelSerializer):
+
+    heros = serializers.StringRelatedField(many=True, required=False)
+
+    # 手动定义字段，会覆盖自动映射对字段
+    btitle = serializers.CharField(min_length=2, max_length=20, required=True)
+
+    class Meta:
+        model = BookInfo
+        # fields = '__all__'  # 映射所有字段
+        fields = ['btitle', 'bpub_date', 'bread', 'heros']  # 映射指定字段
+        # exclude = ['image']  # 映射除此字段
+
+        # 对模型类序列化器自动构建对约束条件进行修订
+        extra_kwargs = {
+            'bread': {'min_value': 0},
+            # 'heros': {'required': False}
+            # 'required': True
+        }
+
+        # 批量设置字段read_only = True
+        # read_only_fields = ['id', 'bread']
 
 
-def validators_btitle(value):
+class HeroInfoModelSerializer(serializers.ModelSerializer):
 
-    if 'django' not in value:
-        raise serializers.ValidationError('这不是一本关于Django的书')
+    # 关联对象对主键隐藏字段不会被自动映射
+    # book_id = serializers.IntegerField()
 
+    class Meta:
 
-class BookInfoSerializer(serializers.Serializer):
-    # 全局  自定义校验函数
-    # btitle = serializers.CharField(validators=[validators_btitle])
-    btitle = serializers.CharField()
-    bpub_date = serializers.DateField()
-    bread = serializers.IntegerField(required=False)
-    bcomment = serializers.IntegerField(required=False)
-    is_delete = serializers.BooleanField(required=False)
-    image = serializers.CharField(required=False)
-    # heros = serializers.PrimaryKeyRelatedField(read_only=True,many=True)
-    # heros = serializers.StringRelatedField(many=True)
-    # 嵌套序列化器
-    # heros = HeroInfoSerializer2(many=True)
-
-    # 类中自定义函数校验
-    # def validate_btitle(self, value):
-    #     if 'django' not in value:
-    #         raise serializers.ValidationError('这不是一本关于Django的书')
-    #     return value
-
-    def validate(self, attrs):
-
-        btitle = attrs.get('btitle')
-        if 'django' not in btitle:
-            raise serializers.ValidationError('这不是一本关于Django的书')
-        return attrs
-
-    # 新建资源
-    def create(self, validated_data):
-        """
-
-        :param validated_data: 校验后的有效数据
-        :return:
-        """
-        instance = BookInfo(
-            btitle=validated_data.get('btitle'),
-            bpub_date=validated_data.get('bpub_date')
-        )
-        instance.save()
-        return instance
-
-    # 反序列化更新
-    def update(self, instance, validated_data):
-        """
-
-        :param instance:被更新的模型类对象
-        :param validated_data:有效数据
-        :return:
-        """
-        btitle = validated_data.get('btitle')
-        instance.btitle = btitle
-        instance.save()
-        return instance
-
-
-class HeroInfoSerializer(serializers.Serializer):
-    """英雄数据序列化器"""
-    GENDER_CHOICES = (
-        (0, 'male'),
-        (1, 'female')
-    )
-    id = serializers.IntegerField(label='ID', read_only=True)
-    hname = serializers.CharField(label='名字', max_length=20)
-    hgender = serializers.ChoiceField(choices=GENDER_CHOICES, label='性别', required=False)
-    hcomment = serializers.CharField(label='描述信息', max_length=200, required=False, allow_null=True)
-    is_delete = serializers.BooleanField()
-
-    hbook = serializers.PrimaryKeyRelatedField(
-        queryset=BookInfo.objects.all()
-    )
-    # hbook = serializers.StringRelatedField(read_only=True)
+        model = HeroInfo
+        fields = '__all__'
